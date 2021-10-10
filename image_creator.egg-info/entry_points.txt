@@ -1,0 +1,3 @@
+[console_scripts]
+image-creator = image_creator.main:image_creator
+

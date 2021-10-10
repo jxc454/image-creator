@@ -1,0 +1,14 @@
+FROM resin/raspberry-pi-debian:buster
+
+RUN sudo apt update
+RUN sudo apt -y upgrade
+
+RUN sudo apt-get install build-essential
+
+RUN sudo apt install python3-dev
+RUN sudo apt install -y python3-pip
+RUN sudo apt-get install python3-setuptools
+
+RUN pip3 install wheel
+
+COPY . .

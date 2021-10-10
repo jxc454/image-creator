@@ -1,0 +1,8 @@
+camera:
+  imagesPerSecond: 4
+  format: jpeg
+files:
+  image:
+    saveDir: /home/pi/Desktop/images
+  metadata:
+    saveDir: /home/pi/Desktop/image_metadata

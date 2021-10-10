@@ -1,0 +1,20 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+opencv-python-headless = "*"
+typer = "*"
+pyyaml = "*"
+image-creator = {editable = true, path = "."}
+picamera = "*"
+
+[dev-packages]
+#black = "*"
+pytest = "*"
+chardet = "*"
+pipenv-setup = "*"
+
+[requires]
+python_version = "3.9"

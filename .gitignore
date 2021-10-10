@@ -1,0 +1,6 @@
+.idea/
+.pytest_cache/
+dist/
+build/
+MANIFEST
+image_creator.egg-info/
