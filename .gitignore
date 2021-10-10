@@ -4,3 +4,4 @@ dist/
 build/
 MANIFEST
 image_creator.egg-info/
+**/__pycache__
