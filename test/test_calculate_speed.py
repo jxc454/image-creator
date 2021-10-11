@@ -1,17 +1,39 @@
+import dataclasses
 import math
 import pytest
+
+from image_creator.config.image_creator_config import ImageCreatorConfig
 from image_creator.image_processor import ImageProcessor, Position
 
 WIDTH = 1200
 
+BASE_CONFIG = ImageCreatorConfig(
+    width=0,
+    height=0,
+    x_min=0,
+    x_max=0,
+    y_min=0,
+    y_max=0,
+    base_image_ttl=0,
+    max_time_delta=0,
+    min_area=0,
+    ft_to_target=0,
+    field_of_view=0.0,
+    image_buffer=0,
+    image_save_dir="",
+    metadata_save_dir="",
+)
+
 
 @pytest.fixture
 def empty_processor():
-    """Returns a Wallet instance with a zero balance"""
-    p = ImageProcessor()
-    p.width = WIDTH
-    p.field_of_view = 90
-    p.ft_to_target = 100
+    config = dataclasses.replace(BASE_CONFIG)
+    config.width = WIDTH
+    config.field_of_view = 90
+    config.ft_to_target = 100
+
+    p = ImageProcessor(config)
+
     return p
 
 

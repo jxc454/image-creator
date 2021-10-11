@@ -1,17 +1,14 @@
-image:
-  width: 1280
-  height: 960
-  x_min: 0
-  x_max: 1280
-  y_min: 0
-  y_max: 960
-  base_image_ttl: 300000
-  max_time_delta: 5000
-  ft_to_target: 50
-  field_of_view: 53.5
-  image_buffer: 4
-output:
-  image:
-    save_dir: /home/pi/Desktop/images
-  metadata:
-    save_dir: /home/pi/Desktop/image_metadata
+width: 1280
+height: 960
+x_min: 0
+x_max: 1280
+y_min: 0
+y_max: 960
+base_image_ttl: 300000
+max_time_delta: 5000
+min_area: 16384
+ft_to_target: 50
+field_of_view: 53.5
+image_buffer: 4
+image_save_dir: /home/pi/Desktop/images
+metadata_save_dir: /home/pi/Desktop/image_metadata

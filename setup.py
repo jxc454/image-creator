@@ -11,7 +11,7 @@ setup(
     author="jameson cotter",
     author_email="jameson.cotter@gmail.com",
     # Packages
-    packages=["image_creator"],
+    packages=["image_creator", "image_creator.config"],
     # Include additional files into the package
     include_package_data=True,
     # Details
@@ -23,6 +23,7 @@ setup(
     # Dependent packages (distributions)
     install_requires=[
         "click==8.0.1; python_version >= '3.6'",
+        "dacite==1.6.0",
         "importlib-resources==5.2.2",
         "numpy==1.21.2; python_version < '3.11' and python_version >= '3.7'",
         "opencv-python-headless==4.5.3.56",

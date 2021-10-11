@@ -10,6 +10,7 @@ pyyaml = "*"
 image-creator = {editable = true, path = "."}
 picamera = "*"
 importlib-resources = "*"
+dacite = "*"
 
 [dev-packages]
 #black = "*"

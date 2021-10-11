@@ -1,5 +1,7 @@
 from image_creator.image_processor import ImageProcessor
 import image_creator.config
+from image_creator.config.image_creator_config import ImageCreatorConfig
+import dacite
 
 try:
     # this import structure is to un-confuse pycharm
@@ -17,27 +19,27 @@ from importlib_resources import files, as_file
 
 app = typer.Typer()
 
+# load default config
 source = files(image_creator.config).joinpath("default.yaml")
 with as_file(source) as default_config:
     with open(default_config, "r") as stream:
-        config = yaml.safe_load(stream)
-        print(config)
+        config_dict = yaml.safe_load(stream)
+        config = dacite.from_dict(ImageCreatorConfig, config_dict)
 
 
 @app.command()
 def start():
-    # write_to = config.files.image.saveDir
-    write_to = "/home/pi/Desktop/images"
-    # frequency = config.camera.imagesPerSecond
-
     with picamera.PiCamera(
-        camera_num=0, sensor_mode=0, clock_mode="reset", resolution=[1280, 960]
+        camera_num=0,
+        sensor_mode=0,
+        clock_mode="reset",
+        resolution=[config.width, config.height],
     ) as camera:
         # let the camera "warm up"
         time.sleep(1)
         camera.vflip = True
 
-        processor = ImageProcessor()
+        processor = ImageProcessor(config)
 
         raw_capture = PiRGBArray(camera, size=camera.resolution)
         i = 0
@@ -49,10 +51,6 @@ def start():
                 raw_capture.truncate(0)
                 i += 1
                 continue
-
-            print(
-                f"{i}, base is None: {processor.base_image is None} image is None: {processor.image is None}"
-            )
 
             # grab the raw NumPy array representing the image
             image = frame.array
@@ -67,8 +65,6 @@ def start():
 
             if i > 10:
                 break
-
-    print("Done")
 
 
 def image_creator():

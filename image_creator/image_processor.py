@@ -1,6 +1,8 @@
 import math
 import os
 
+from image_creator.config.image_creator_config import ImageCreatorConfig
+
 try:
     # this import structure is to un-confuse pycharm
     from cv2 import cv2 as cv
@@ -29,7 +31,8 @@ class Position:
 
 
 class ImageProcessor:
-    def __init__(self):
+    def __init__(self, config: ImageCreatorConfig):
+        # state
         self.base_image = None
         self.base_timestamp = None
         self.positions = []
@@ -41,19 +44,19 @@ class ImageProcessor:
         self.key = None
 
         # config
-        self.base_image_ttl = 300000  # 5 minutes
-        self.max_time_delta = 5000  # 5 seconds
-        self.save_dir = "/home/pi/Desktop/images"
-        self.ft_to_target = 50
-        self.field_of_view = 53.5
-        self.image_buffer = 4
+        self.base_image_ttl = config.base_image_ttl
+        self.max_time_delta = config.max_time_delta
+        self.save_dir = config.image_save_dir
+        self.ft_to_target = config.ft_to_target
+        self.field_of_view = config.field_of_view
+        self.image_buffer = config.image_buffer
+        self.width = config.width
+        self.height = config.height
+        self.min_area = config.min_area
 
         # constants
         self.blur_size = (15, 15)
         self.gray_threshold = 15
-        self.min_area = 16384
-        self.width = 1280
-        self.height = 960
 
     def tracking(self):
         return len(self.positions) > 0
@@ -119,34 +122,29 @@ class ImageProcessor:
             frame_delta, self.gray_threshold, 255, cv.THRESH_BINARY
         )[1]
 
-        # dilate the threshold_image to fill in any holes, then find contours
+        # dilate the threshold_image then find contours
         threshold_image = cv.dilate(threshold_image, None, iterations=2)
         (contours, _) = cv.findContours(
             threshold_image.copy(), cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE
         )
 
         # look for motion
-        biggest_area = 0
+        greatest_area = 0
 
         # examine the contours, looking for the largest one
         position = Position(None, None, self.image_time)
-        y = 0
-        height = 0
         for c in contours:
             (x, y1, width, height) = cv.boundingRect(c)
             found_area = width * height
 
             if (
                 (found_area > self.min_area)
-                and (found_area > biggest_area)
-                and biggest_area != self.width * self.height
+                and (found_area > greatest_area)
+                and greatest_area != self.width * self.height
             ):
-                print(f"found area - {found_area}")
-                biggest_area = found_area
+                greatest_area = found_area
                 position.x_left = x
                 position.x_right = x + width
-
-                y = y1
 
         self.processed_image = self.image
 
@@ -155,13 +153,6 @@ class ImageProcessor:
                 self.key = self.image_time
 
             self.positions.append(position)
-            cv.rectangle(
-                self.image,
-                (position.x_left, y),
-                (position.x_right, y + height),
-                (0, 255, 0),
-                5,
-            )
 
             # TODO - debug logging
             cv.imwrite(
@@ -172,7 +163,7 @@ class ImageProcessor:
             )
         else:
             # no motion
-            # is this the end of some piece of motion?
+            # if this is the end of some motion then write the image
             if self.mph_image is not None:
                 cv.imwrite(
                     os.path.join(self.save_dir, f"max-speed-{self.max_speed}.jpg",),
