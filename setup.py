@@ -23,11 +23,13 @@ setup(
     # Dependent packages (distributions)
     install_requires=[
         "click==8.0.1; python_version >= '3.6'",
+        "importlib-resources==5.2.2",
         "numpy==1.21.2; python_version < '3.11' and python_version >= '3.7'",
         "opencv-python-headless==4.5.3.56",
         "picamera==1.13",
         "pyyaml==5.4.1",
         "typer==0.4.0",
+        "zipp==3.6.0; python_version < '3.10'",
     ],
     dependency_links=[],
     entry_points={

@@ -46,6 +46,7 @@ class ImageProcessor:
         self.save_dir = "/home/pi/Desktop/images"
         self.ft_to_target = 50
         self.field_of_view = 53.5
+        self.image_buffer = 4
 
         # constants
         self.blur_size = (15, 15)
@@ -191,8 +192,8 @@ class ImageProcessor:
                 "x_left", "x_right", "timestamp"
             ]
 
-            min_valid = 4
-            max_valid = self.width - 4
+            min_valid = self.image_buffer
+            max_valid = self.width - self.image_buffer
 
             # if each left value is not cut-off then use the left values, else try the right values
             # else, we can't know the distance (without already knowing the length of the moving object)

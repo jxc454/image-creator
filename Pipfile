@@ -9,6 +9,7 @@ typer = "*"
 pyyaml = "*"
 image-creator = {editable = true, path = "."}
 picamera = "*"
+importlib-resources = "*"
 
 [dev-packages]
 #black = "*"

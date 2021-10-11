@@ -1,4 +1,5 @@
 from image_creator.image_processor import ImageProcessor
+import image_creator.config
 
 try:
     # this import structure is to un-confuse pycharm
@@ -8,16 +9,19 @@ except ImportError:
 import typer
 import yaml
 import picamera
-import os
 from picamera.array import PiRGBArray
 import time
+from importlib_resources import files, as_file
+
+# default width/height = 3840x2160
 
 app = typer.Typer()
 
-# with open("config/production.yaml", "r") as stream:
-#     config = yaml.safe_load(stream)
-
-# default width/height = 3840x2160
+source = files(image_creator.config).joinpath("default.yaml")
+with as_file(source) as default_config:
+    with open(default_config, "r") as stream:
+        config = yaml.safe_load(stream)
+        print(config)
 
 
 @app.command()
@@ -61,7 +65,7 @@ def start():
 
             i += 1
 
-            if i > 30:
+            if i > 10:
                 break
 
     print("Done")
