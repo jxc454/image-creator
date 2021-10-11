@@ -1,16 +1,18 @@
 import datetime
+import logging
 import math
 import os
 
 from image_creator.config.image_creator_config import ImageCreatorConfig
 from dataclasses import dataclass, astuple
-from image_creator.image_creator_logger import logger
 
 try:
     # this import structure is to un-confuse pycharm
     from cv2 import cv2 as cv
 except ImportError:
     pass
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -36,14 +38,15 @@ class ImageProcessor:
         # state
         self.base_image = None
         self.base_timestamp = None
+
+        self.key = None
         self.positions = []
         self.top_speed = -math.inf
-        self.image = None
-        self.image_time = None
-        self.processed_image = None
         self.mph_image = None
         self.mph_image_time = None
-        self.key = None
+
+        self.image = None
+        self.image_time = None
 
         # config
         self.base_image_ttl = config.base_image_ttl
@@ -73,7 +76,7 @@ class ImageProcessor:
             / 5280
         )
 
-        return pixels_per_ms * 3600000 * miles_per_pixel
+        return pixels_per_ms * 3600e3 * miles_per_pixel
 
     def place_image(self, image, capture_time):
         """
@@ -81,11 +84,6 @@ class ImageProcessor:
         if there's an image, but we're not tracking and the image's time is up, then the input becomes the base image
         Otherwise just set self.image to the input
         """
-        # TODO - debug logging
-        if len(self.positions) > 0:
-            for p in self.positions:
-                logger.info("%d, %d, %d" % (p.x_left, p.x_right, p.timestamp))
-
         # TODO - try to apply this logic only after we "know" that the image doesn't have motion
         if self.base_image is None or (
             self.base_timestamp + self.base_image_ttl < capture_time
@@ -96,23 +94,37 @@ class ImageProcessor:
                 cv.cvtColor(image, cv.COLOR_BGR2GRAY), self.blur_size, 0
             )
             self.base_timestamp = capture_time
+            logger.info("Replacing base_image")
 
-            cv.imwrite(os.path.join(self.save_dir, "base_image.jpg"), image)
+            if logger.level <= logging.DEBUG:
+                base_image_path = os.path.join(self.save_dir, "base_image.jpg")
+                logger.debug("writing new base_image to %s" % base_image_path)
+                cv.imwrite(base_image_path, image)
         else:
             # this image should be processed
             self.image = image
             self.image_time = capture_time
+            logger.debug("Setting new image")
 
         return self
 
     def detect_motion(self):
         # if there is a key, clear it if we've been going for too long
         if self.key is not None and self.image_time > self.key + self.max_time_delta:
+            logger.info(
+                "Clearing session %d (with %d positions) because it timed out"
+                % (self.key, len(self.positions))
+            )
             self.positions.clear()
             self.key = None
+            self.mph_image = None
+            self.mph_image_time = None
+            # TODO should probably reset the base_image here, because the continous motion detection might be
+            #  an issue with comparison to the base_image
 
         # if there is no image, do nothing
         if self.image is None:
+            logger.debug("No image, not detecting motion")
             return self
 
         # convert the image to grayscale, and blur it
@@ -133,6 +145,11 @@ class ImageProcessor:
             threshold_image.copy(), cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE
         )
 
+        if logger.level <= logging.DEBUG:
+            threshold_image_path = os.path.join(self.save_dir, "threshold_image.jpg")
+            logger.debug("writing new threshold_image to %s" % threshold_image_path)
+            cv.imwrite(threshold_image_path, threshold_image)
+
         # look for motion
         greatest_area = 0
 
@@ -151,28 +168,33 @@ class ImageProcessor:
                 position.x_left = x
                 position.x_right = x + width
 
-        self.processed_image = self.image
-
         if position.x_left is not None:
             if self.key is None:
                 self.key = self.image_time
+                logger.info(
+                    "Found new motion!  key=%f left=%s, right=%s, timestamp=%f"
+                    % (self.key, position.x_left, position.x_right, position.timestamp)
+                )
+            else:
+                logger.info(
+                    "Adding motion to existing key=%f left=%s, right=%s, timestamp=%f"
+                    % (self.key, position.x_left, position.x_right, position.timestamp)
+                )
 
             self.positions.append(position)
-
-            # TODO - debug logging
-            cv.imwrite(
-                os.path.join(
-                    self.save_dir, f"threshold-{self.image_time}-{position.x_left}.jpg"
-                ),
-                threshold_image,
-            )
         else:
             # no motion
+            logger.debug("No motion found")
             # if this is the end of some motion then write the image
             if self.mph_image is not None:
+                mph_dir = os.path.join(
+                    self.save_dir,
+                    f"max-speed_{round(self.top_speed)}_timestamp_{round(self.mph_image_time // 1e3)}.jpg",
+                )
+
                 cv.putText(
                     img=self.mph_image,
-                    text=f"{round(self.top_speed)} MPH, {datetime.datetime.fromtimestamp(self.mph_image_time // 1000)}",
+                    text=f"{round(self.top_speed)} MPH, {datetime.datetime.fromtimestamp(self.mph_image_time // 1e3)}",
                     org=(self.width // 12, self.height // 12),
                     fontFace=cv.FONT_HERSHEY_SIMPLEX,
                     fontScale=2,
@@ -181,16 +203,18 @@ class ImageProcessor:
                     color=(0, 0, 255),
                 )
 
+                logger.info(
+                    "Writing image! key=%f top_speed=%d filename=%s"
+                    % (self.key, round(self.top_speed), mph_dir)
+                )
+
                 cv.imwrite(
-                    os.path.join(
-                        self.save_dir,
-                        f"max-speed_{self.top_speed}_timestamp_{self.mph_image_time // 1000}.jpg",
-                    ),
-                    self.mph_image,
+                    mph_dir, self.mph_image,
                 )
 
                 self.mph_image = None
                 self.mph_image_time = None
+                self.key = None
 
             self.positions.clear()
             self.top_speed = -math.inf
@@ -229,7 +253,7 @@ class ImageProcessor:
                 else -math.inf
             )
 
-            logger.info("speed=%d, top_speed=%f" % (speed, self.top_speed))
+            logger.info("speed=%d, top_speed=%s" % (speed, str(self.top_speed)))
             if speed > self.top_speed and (self.min_speed <= speed <= self.max_speed):
                 self.top_speed = speed
 

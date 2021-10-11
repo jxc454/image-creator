@@ -19,6 +19,7 @@ class ImageCreatorConfig:
     image_buffer: int
     image_save_dir: str
     metadata_save_dir: str
+    log_level: int
 
     @staticmethod
     def merge(ob1, ob2):

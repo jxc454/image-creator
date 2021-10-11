@@ -14,3 +14,5 @@ field_of_view: 53.5
 image_buffer: 4
 image_save_dir: /home/pi/Desktop/images
 metadata_save_dir: /home/pi/Desktop/image_metadata
+# 10 - 50 is DEBUG - CRITICAL
+log_level: 20

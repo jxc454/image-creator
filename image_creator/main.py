@@ -3,19 +3,20 @@ import image_creator.config
 from image_creator.config.image_creator_config import ImageCreatorConfig
 import dacite
 import pprint
+import logging
 
 try:
     # this import structure is to un-confuse pycharm
     from cv2 import cv2 as cv
 except ImportError:
-    print("NO CV2")
+    pass
 import typer
 import yaml
 import picamera
 from picamera.array import PiRGBArray
 import time
 from importlib_resources import files, as_file
-from image_creator.image_creator_logger import logger
+from image_creator.image_creator_logger import build_logger
 
 # default width/height = 3840x2160
 
@@ -39,6 +40,9 @@ def start(config_path=None):
             }
             config = dacite.from_dict(ImageCreatorConfig, merged_config_dict)
 
+    build_logger(config.log_level)
+    logger = logging.getLogger(__name__)
+
     logger.info("Starting up with config: %s" % (pprint.pformat(merged_config_dict)))
 
     with picamera.PiCamera(
@@ -49,12 +53,13 @@ def start(config_path=None):
     ) as camera:
         # let the camera "warm up"
         time.sleep(1)
-        camera.vflip = True
+        # camera.vflip = True
 
         processor = ImageProcessor(config)
 
         raw_capture = PiRGBArray(camera, size=camera.resolution)
         i = 0
+
         for frame in camera.capture_continuous(
             raw_capture, format="bgr", use_video_port=True
         ):
@@ -69,9 +74,6 @@ def start(config_path=None):
 
             raw_capture.truncate(0)
             i += 1
-
-            if i > 100:
-                break
 
 
 def image_creator():
