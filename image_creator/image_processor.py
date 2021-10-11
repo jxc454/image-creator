@@ -3,14 +3,14 @@ import math
 import os
 
 from image_creator.config.image_creator_config import ImageCreatorConfig
+from dataclasses import dataclass, astuple
+from image_creator.image_creator_logger import logger
 
 try:
     # this import structure is to un-confuse pycharm
     from cv2 import cv2 as cv
 except ImportError:
     pass
-
-from dataclasses import dataclass, astuple
 
 
 @dataclass
@@ -84,7 +84,7 @@ class ImageProcessor:
         # TODO - debug logging
         if len(self.positions) > 0:
             for p in self.positions:
-                print(f"{p.x_left}, {p.x_right}, {p.timestamp}")
+                logger.info("%d, %d, %d" % (p.x_left, p.x_right, p.timestamp))
 
         # TODO - try to apply this logic only after we "know" that the image doesn't have motion
         if self.base_image is None or (
@@ -167,11 +167,9 @@ class ImageProcessor:
                 threshold_image,
             )
         else:
-            print("NO MOTION")
             # no motion
             # if this is the end of some motion then write the image
             if self.mph_image is not None:
-                print("NO MOTION, PLUS MPH_IMAGE IS NOT NONE")
                 cv.putText(
                     img=self.mph_image,
                     text=f"{round(self.top_speed)} MPH, {datetime.datetime.fromtimestamp(self.mph_image_time // 1000)}",
@@ -230,7 +228,8 @@ class ImageProcessor:
                 if distance is not None
                 else -math.inf
             )
-            print(f"speed={speed}", f"top_speed={self.top_speed}")
+
+            logger.info("speed=%d, top_speed=%f" % (speed, self.top_speed))
             if speed > self.top_speed and (self.min_speed <= speed <= self.max_speed):
                 self.top_speed = speed
 

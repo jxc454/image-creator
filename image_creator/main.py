@@ -2,6 +2,7 @@ from image_creator.image_processor import ImageProcessor
 import image_creator.config
 from image_creator.config.image_creator_config import ImageCreatorConfig
 import dacite
+import pprint
 
 try:
     # this import structure is to un-confuse pycharm
@@ -14,6 +15,7 @@ import picamera
 from picamera.array import PiRGBArray
 import time
 from importlib_resources import files, as_file
+from image_creator.image_creator_logger import logger
 
 # default width/height = 3840x2160
 
@@ -37,7 +39,7 @@ def start(config_path=None):
             }
             config = dacite.from_dict(ImageCreatorConfig, merged_config_dict)
 
-    print(config)
+    logger.info("Starting up with config: %s" % (pprint.pformat(merged_config_dict)))
 
     with picamera.PiCamera(
         camera_num=0,
@@ -56,22 +58,16 @@ def start(config_path=None):
         for frame in camera.capture_continuous(
             raw_capture, format="bgr", use_video_port=True
         ):
-            print(str(i))
-            if i == 0:
-                # the very first image looks a little different
-                raw_capture.truncate(0)
-                i += 1
-                continue
+            # the very first image always looks a little strange, even with the warm-up, so skip it
+            if i != 0:
+                # grab the raw NumPy array representing the image
+                image = frame.array
 
-            # grab the raw NumPy array representing the image
-            image = frame.array
-
-            processor.place_image(
-                image, time.time() * 1000
-            ).detect_motion().calculate_speed()
+                processor.place_image(
+                    image, time.time() * 1000
+                ).detect_motion().calculate_speed()
 
             raw_capture.truncate(0)
-
             i += 1
 
             if i > 100:
