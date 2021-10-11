@@ -23,12 +23,21 @@ app = typer.Typer()
 source = files(image_creator.config).joinpath("default.yaml")
 with as_file(source) as default_config:
     with open(default_config, "r") as stream:
-        config_dict = yaml.safe_load(stream)
-        config = dacite.from_dict(ImageCreatorConfig, config_dict)
+        default_config_dict = yaml.safe_load(stream)
+        default_config = dacite.from_dict(ImageCreatorConfig, default_config_dict)
 
 
 @app.command()
-def start():
+def start(config_path=None):
+    if config_path is not None:
+        with open(config_path, "r") as user_config_stream:
+            user_config_dict = yaml.safe_load(user_config_stream)
+            user_config = dacite.from_dict(ImageCreatorConfig, user_config_dict)
+
+    config = ImageCreatorConfig.merge(default_config, user_config)
+
+    print(config)
+
     with picamera.PiCamera(
         camera_num=0,
         sensor_mode=0,
@@ -46,6 +55,7 @@ def start():
         for frame in camera.capture_continuous(
             raw_capture, format="bgr", use_video_port=True
         ):
+            print(str(i))
             if i == 0:
                 # the very first image looks a little different
                 raw_capture.truncate(0)

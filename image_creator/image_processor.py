@@ -77,8 +77,8 @@ class ImageProcessor:
         if there's an image, but we're not tracking and the image's time is up, then the input becomes the base image
         Otherwise just set self.image to the input
         """
+        # TODO - debug logging
         if len(self.positions) > 0:
-            # TODO - debug logging
             for p in self.positions:
                 print(f"{p.x_left}, {p.x_right}, {p.timestamp}")
 
