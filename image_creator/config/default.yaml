@@ -4,6 +4,8 @@ x_min: 0
 x_max: 1280
 y_min: 0
 y_max: 960
+min_speed: 15
+max_speed: 55
 base_image_ttl: 300000
 max_time_delta: 5000
 min_area: 16384

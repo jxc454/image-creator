@@ -9,6 +9,8 @@ class ImageCreatorConfig:
     x_max: int
     y_min: int
     y_max: int
+    min_speed: int
+    max_speed: int
     base_image_ttl: int
     max_time_delta: int
     min_area: int

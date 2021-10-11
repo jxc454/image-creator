@@ -24,17 +24,18 @@ source = files(image_creator.config).joinpath("default.yaml")
 with as_file(source) as default_config:
     with open(default_config, "r") as stream:
         default_config_dict = yaml.safe_load(stream)
-        default_config = dacite.from_dict(ImageCreatorConfig, default_config_dict)
 
 
 @app.command()
 def start(config_path=None):
+    # overlay config input on default config
     if config_path is not None:
         with open(config_path, "r") as user_config_stream:
-            user_config_dict = yaml.safe_load(user_config_stream)
-            user_config = dacite.from_dict(ImageCreatorConfig, user_config_dict)
-
-    config = ImageCreatorConfig.merge(default_config, user_config)
+            merged_config_dict = {
+                **default_config_dict,
+                **yaml.safe_load(user_config_stream),
+            }
+            config = dacite.from_dict(ImageCreatorConfig, merged_config_dict)
 
     print(config)
 
@@ -73,7 +74,7 @@ def start(config_path=None):
 
             i += 1
 
-            if i > 10:
+            if i > 100:
                 break
 
 

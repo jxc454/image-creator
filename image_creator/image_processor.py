@@ -1,3 +1,4 @@
+import datetime
 import math
 import os
 
@@ -36,11 +37,12 @@ class ImageProcessor:
         self.base_image = None
         self.base_timestamp = None
         self.positions = []
-        self.max_speed = -math.inf
+        self.top_speed = -math.inf
         self.image = None
         self.image_time = None
         self.processed_image = None
         self.mph_image = None
+        self.mph_image_time = None
         self.key = None
 
         # config
@@ -53,6 +55,8 @@ class ImageProcessor:
         self.width = config.width
         self.height = config.height
         self.min_area = config.min_area
+        self.min_speed = config.min_speed
+        self.max_speed = config.max_speed
 
         # constants
         self.blur_size = (15, 15)
@@ -82,6 +86,7 @@ class ImageProcessor:
             for p in self.positions:
                 print(f"{p.x_left}, {p.x_right}, {p.timestamp}")
 
+        # TODO - try to apply this logic only after we "know" that the image doesn't have motion
         if self.base_image is None or (
             self.base_timestamp + self.base_image_ttl < capture_time
             and not self.tracking()
@@ -162,15 +167,35 @@ class ImageProcessor:
                 threshold_image,
             )
         else:
+            print("NO MOTION")
             # no motion
             # if this is the end of some motion then write the image
             if self.mph_image is not None:
+                print("NO MOTION, PLUS MPH_IMAGE IS NOT NONE")
+                cv.putText(
+                    img=self.mph_image,
+                    text=f"{round(self.top_speed)} MPH, {datetime.datetime.fromtimestamp(self.mph_image_time // 1000)}",
+                    org=(self.width // 12, self.height // 12),
+                    fontFace=cv.FONT_HERSHEY_SIMPLEX,
+                    fontScale=2,
+                    thickness=4,
+                    lineType=8,
+                    color=(0, 0, 255),
+                )
+
                 cv.imwrite(
-                    os.path.join(self.save_dir, f"max-speed-{self.max_speed}.jpg",),
+                    os.path.join(
+                        self.save_dir,
+                        f"max-speed_{self.top_speed}_timestamp_{self.mph_image_time // 1000}.jpg",
+                    ),
                     self.mph_image,
                 )
 
-                self.positions.clear()
+                self.mph_image = None
+                self.mph_image_time = None
+
+            self.positions.clear()
+            self.top_speed = -math.inf
 
         return self
 
@@ -205,12 +230,13 @@ class ImageProcessor:
                 if distance is not None
                 else -math.inf
             )
-
-            if speed > self.max_speed:
-                self.max_speed = speed
+            print(f"speed={speed}", f"top_speed={self.top_speed}")
+            if speed > self.top_speed and (self.min_speed <= speed <= self.max_speed):
+                self.top_speed = speed
 
                 # update self.image with the mph and timestamp in an overlay
                 # put the image in the mph_image slot
                 self.mph_image = self.image
+                self.mph_image_time = self.image_time
 
         return self
