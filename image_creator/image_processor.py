@@ -13,6 +13,9 @@ except ImportError:
     pass
 
 logger = logging.getLogger(__name__)
+image_log_dir = os.path.join(
+    os.path.dirname(logger.root.handlers[0].baseFilename), "images"
+)
 
 
 @dataclass
@@ -97,7 +100,7 @@ class ImageProcessor:
             logger.info("Replacing base_image")
 
             if logger.level <= logging.DEBUG:
-                base_image_path = os.path.join(self.save_dir, "base_image.jpg")
+                base_image_path = os.path.join(image_log_dir, "base_image.jpg")
                 logger.debug("writing new base_image to %s" % base_image_path)
                 cv.imwrite(base_image_path, image)
         else:
@@ -145,11 +148,6 @@ class ImageProcessor:
             threshold_image.copy(), cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE
         )
 
-        if logger.level <= logging.DEBUG:
-            threshold_image_path = os.path.join(self.save_dir, "threshold_image.jpg")
-            logger.debug("writing new threshold_image to %s" % threshold_image_path)
-            cv.imwrite(threshold_image_path, threshold_image)
-
         # look for motion
         greatest_area = 0
 
@@ -180,6 +178,13 @@ class ImageProcessor:
                     "Adding motion to existing key=%f left=%s, right=%s, timestamp=%f"
                     % (self.key, position.x_left, position.x_right, position.timestamp)
                 )
+
+            if logger.level <= logging.DEBUG:
+                threshold_image_path = os.path.join(
+                    image_log_dir, f"threshold_image_{self.key}_{self.image_time}.jpg"
+                )
+                logger.debug("writing new threshold_image to %s" % threshold_image_path)
+                cv.imwrite(threshold_image_path, threshold_image)
 
             self.positions.append(position)
         else:

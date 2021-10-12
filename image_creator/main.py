@@ -1,3 +1,4 @@
+from image_creator.image_creator_logger import logger as root_logger
 from image_creator.image_processor import ImageProcessor
 import image_creator.config
 from image_creator.config.image_creator_config import ImageCreatorConfig
@@ -16,9 +17,9 @@ import picamera
 from picamera.array import PiRGBArray
 import time
 from importlib_resources import files, as_file
-from image_creator.image_creator_logger import build_logger
 
 # default width/height = 3840x2160
+logger = logging.getLogger(__name__)
 
 app = typer.Typer()
 
@@ -40,8 +41,7 @@ def start(config_path=None):
             }
             config = dacite.from_dict(ImageCreatorConfig, merged_config_dict)
 
-    build_logger(config.log_level)
-    logger = logging.getLogger(__name__)
+    root_logger.setLevel(config.log_level)
 
     logger.info("Starting up with config: %s" % (pprint.pformat(merged_config_dict)))
 
@@ -69,7 +69,7 @@ def start(config_path=None):
                 image = frame.array
 
                 processor.place_image(
-                    image, time.time() * 1000
+                    image, round(time.time() * 1000 // 1)
                 ).detect_motion().calculate_speed()
 
             raw_capture.truncate(0)
